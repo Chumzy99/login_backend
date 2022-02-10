@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { env } from 'process';
 import UserData from '../models/userModel';
 
 const signToken = (id: string) => {
@@ -7,6 +8,19 @@ const signToken = (id: string) => {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 };
+
+const cookieOptions = {
+  expires: new Date(
+    Date.now() +
+      Number(process.env.JWT_COOKIE_EXPIRES_IN!) * 24 * 60 * 60 * 1000
+  ),
+  secure: false,
+  httpOnly: true,
+};
+
+if (process.env.NODE_ENV === 'production') {
+  cookieOptions.secure = true;
+}
 
 export const signup = async (req: Request, res: Response) => {
   try {
@@ -49,6 +63,8 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const token = signToken(user._id);
+
+    res.cookie('jwt', token, cookieOptions);
 
     res.status(200).json({
       status: 'success',
